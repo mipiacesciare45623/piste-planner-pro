@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { NewsList, type NewsItem } from "@/components/ski/NewsList";
 import { WeatherWidget } from "@/components/ski/WeatherWidget";
+import { FavoriteButton } from "@/components/ski/FavoriteButton";
 import { WebcamPanel } from "@/components/ski/WebcamPanel";
 import {
   RESORT_CATALOG,
@@ -115,11 +116,20 @@ function LocalityPage() {
                 : `${resort.total_lifts} impianti`}
             </Badge>
           </div>
-          <Button asChild className="mt-4">
-            <Link to="/crea-itinerario" search={{ targetResort: resort.id }}>
-              Pianifica la sciata qui
-            </Link>
-          </Button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button asChild>
+              <Link to="/crea-itinerario" search={{ targetResort: resort.id }}>
+                Pianifica la sciata qui
+              </Link>
+            </Button>
+            <FavoriteButton
+              slug={resort.id}
+              name={resort.name}
+              region={resort.region}
+              lat={resort.lat}
+              lng={resort.lng}
+            />
+          </div>
         </div>
       </header>
 

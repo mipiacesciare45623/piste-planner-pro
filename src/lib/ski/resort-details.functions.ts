@@ -75,6 +75,47 @@ interface OpenMeteoResponse {
  * Base: Open-Meteo (temperatura, precipitazioni, vento, neve, quota neve);
  * Google Weather, quando configurato, aggiunge descrizione e icona ufficiali.
  */
+const OM_PARAMS =
+  "&current=temperature_2m,precipitation,snowfall,weather_code,wind_speed_10m,wind_direction_10m,freezing_level_height" +
+  "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,snowfall_sum,wind_speed_10m_max" +
+  "&timezone=Europe%2FRome&forecast_days=3";
+
+/** Cache meteo in memoria (45 minuti) per non saturare i provider. */
+const weatherCache = new Map<string, { at: number; value: OpenMeteoResponse }>();
+const WEATHER_TTL = 45 * 60 * 1000;
+
+/**
+ * Scarica il meteo con tentativi multipli: endpoint principale, mirror
+ * e coordinate arrotondate (utile quando la stazione in quota non è coperta).
+ */
+async function fetchOpenMeteo(lat: number, lng: number): Promise<OpenMeteoResponse | null> {
+  const key = `${lat.toFixed(2)},${lng.toFixed(2)}`;
+  const cached = weatherCache.get(key);
+  if (cached && Date.now() - cached.at < WEATHER_TTL) return cached.value;
+
+  const rLat = Math.round(lat * 100) / 100;
+  const rLng = Math.round(lng * 100) / 100;
+  const attempts = [
+    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}${OM_PARAMS}`,
+    `https://api.open-meteo.com/v1/forecast?latitude=${rLat}&longitude=${rLng}${OM_PARAMS}`,
+    `https://api.open-meteo.com/v1/forecast?latitude=${rLat}&longitude=${rLng}${OM_PARAMS}&models=best_match`,
+  ];
+
+  for (const url of attempts) {
+    const res = await fetch(url).catch(() => null);
+    if (!res || !res.ok) {
+      console.error("Open-Meteo tentativo fallito", res?.status ?? "network");
+      continue;
+    }
+    const json = (await res.json().catch(() => null)) as OpenMeteoResponse | null;
+    if (json?.current || json?.daily) {
+      weatherCache.set(key, { at: Date.now(), value: json });
+      return json;
+    }
+  }
+  return cached?.value ?? null;
+}
+
 export const resortWeather = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => coordsSchema.parse(data))
   .handler(async ({ data }) => {
@@ -84,17 +125,11 @@ export const resortWeather = createServerFn({ method: "POST" })
       error: null as string | null,
     };
 
-    const omUrl =
-      `https://api.open-meteo.com/v1/forecast?latitude=${data.lat}&longitude=${data.lng}` +
-      "&current=temperature_2m,precipitation,snowfall,weather_code,wind_speed_10m,wind_direction_10m,freezing_level_height" +
-      "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,snowfall_sum,wind_speed_10m_max" +
-      "&timezone=Europe%2FRome&forecast_days=3";
-
     const headers = gatewayHeaders();
     const q = `location.latitude=${data.lat}&location.longitude=${data.lng}&languageCode=it&unitsSystem=METRIC`;
 
-    const [omRes, googleRes] = await Promise.all([
-      fetch(omUrl).catch(() => null),
+    const [om, googleRes] = await Promise.all([
+      fetchOpenMeteo(data.lat, data.lng),
       headers
         ? fetch(`${GATEWAY_URL}/weather/v1/currentConditions:lookup?${q}`, { headers }).catch(
             () => null,
@@ -102,12 +137,10 @@ export const resortWeather = createServerFn({ method: "POST" })
         : Promise.resolve(null),
     ]);
 
-    if (!omRes || !omRes.ok) {
-      console.error("Open-Meteo non disponibile", omRes?.status);
-      return { ...empty, error: "Meteo non disponibile in questo momento." };
+    if (!om) {
+      return { ...empty, error: "Meteo temporaneamente non disponibile: riprova tra poco." };
     }
 
-    const om = (await omRes.json()) as OpenMeteoResponse;
     const c = om.current ?? {};
 
     let condition = wmoLabel(num(c["weather_code"]));

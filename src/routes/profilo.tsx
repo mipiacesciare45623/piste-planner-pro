@@ -11,6 +11,7 @@ import {
   type SkiProfile,
 } from "@/lib/ski/profile";
 import { SavedItineraries } from "@/components/ski/SavedItineraries";
+import { FavoriteResorts } from "@/components/ski/FavoriteResorts";
 import { useAuth } from "@/hooks/useAuth";
 import type { SkierLevel } from "@/lib/ski/types";
 
@@ -179,6 +180,8 @@ function ProfilePage() {
           </Button>
         )}
       </section>
+
+      <FavoriteResorts />
 
       <SavedItineraries />
     </main>

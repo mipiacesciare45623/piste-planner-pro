@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { Compass, LogOut, MapPlus, Snowflake, User } from "lucide-react";
+import { Bell, Compass, LogOut, MapPlus, Snowflake, User } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useFavoriteUpdates } from "@/hooks/useFavorites";
 
 const NAV = [
   { to: "/", label: "Esplora", icon: Compass, exact: true },
@@ -12,11 +13,24 @@ const NAV = [
 
 function AccountBar() {
   const { isAuthenticated, username, loading, signOut } = useAuth();
+  const { updates } = useFavoriteUpdates();
   if (loading) return null;
   return (
     <div className="flex items-center justify-end gap-3 border-b border-border bg-card/60 px-5 py-2">
       {isAuthenticated ? (
         <>
+          <Link
+            to="/profilo"
+            aria-label={`Aggiornamenti preferiti: ${updates.length}`}
+            className="relative text-muted-foreground hover:text-foreground"
+          >
+            <Bell className="h-5 w-5" />
+            {updates.length > 0 && (
+              <span className="absolute -top-1 -right-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                {updates.length}
+              </span>
+            )}
+          </Link>
           <Link to="/profilo" className="flex items-center gap-2 text-sm font-medium text-foreground">
             <span className="grid h-8 w-8 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
               {username.slice(0, 2).toUpperCase()}

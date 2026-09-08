@@ -10,7 +10,9 @@ export function WeatherWidget({ lat, lng }: { lat: number; lng: number }) {
   const { data, isPending } = useQuery({
     queryKey: ["resort-weather", lat.toFixed(3), lng.toFixed(3)],
     queryFn: () => fetchWeather({ data: { lat, lng } }),
-    staleTime: 1000 * 60 * 15,
+    staleTime: 1000 * 60 * 45,
+    gcTime: 1000 * 60 * 60,
+    retry: 2,
   });
 
   if (isPending) {
