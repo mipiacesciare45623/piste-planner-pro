@@ -1,9 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { BedDouble, CheckCircle2, Loader2, Mountain, Plus, Star, Store } from "lucide-react";
+import { BedDouble, CheckCircle2, Loader2, Mountain, Plus, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { PlaceRow } from "@/components/ski/PlaceRow";
 import { supabase } from "@/integrations/supabase/client";
 import {
   nearbyForLift,
@@ -36,7 +44,7 @@ export function ItineraryBuilder({ startDate, endDate, totalDays }: Props) {
   const [rental, setRental] = useState<NearbyPlace | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [savedOpen, setSavedOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const typed = useRef(false);
 
@@ -70,7 +78,6 @@ export function ItineraryBuilder({ startDate, endDate, totalDays }: Props) {
     setHotels([]);
     setRentals([]);
     setError(null);
-    setMessage(null);
     setLoadingNearby(true);
     try {
       const [h, r] = await Promise.all([
@@ -94,7 +101,6 @@ export function ItineraryBuilder({ startDate, endDate, totalDays }: Props) {
     if (!canSave || !lift || !hotel || !rental || !startDate || !endDate) return;
     setSaving(true);
     setError(null);
-    setMessage(null);
     try {
       await persist({
         data: {
@@ -121,7 +127,7 @@ export function ItineraryBuilder({ startDate, endDate, totalDays }: Props) {
           },
         },
       });
-      setMessage("Itinerario salvato: lo trovi nella scheda Profilo.");
+      setSavedOpen(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Salvataggio non riuscito");
     } finally {
@@ -177,16 +183,16 @@ export function ItineraryBuilder({ startDate, endDate, totalDays }: Props) {
       )}
 
       {lift && !loadingNearby && (
-        <div className="grid gap-4 md:grid-cols-2">
-          <PlaceList
-            title="Dove dormire"
+        <div className="space-y-6">
+          <PlaceRow
+            title="Alloggi consigliati"
             icon={<BedDouble className="h-4 w-4 text-primary" />}
             places={hotels}
             selected={hotel}
             onSelect={setHotel}
           />
-          <PlaceList
-            title="Dove noleggiare l'attrezzatura"
+          <PlaceRow
+            title="Noleggi attrezzatura"
             icon={<Store className="h-4 w-4 text-primary" />}
             places={rentals}
             selected={rental}
@@ -196,12 +202,41 @@ export function ItineraryBuilder({ startDate, endDate, totalDays }: Props) {
       )}
 
       {error && <p className="text-sm text-destructive">{error}</p>}
-      {message && (
-        <p className="flex items-center gap-2 text-sm text-primary">
-          <CheckCircle2 className="h-4 w-4" />
-          {message}
-        </p>
-      )}
+      <Dialog open={savedOpen} onOpenChange={setSavedOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 font-display text-xl">
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+              Itinerario salvato
+            </DialogTitle>
+            <DialogDescription>
+              Il tuo viaggio è stato salvato nel profilo con alloggio e noleggio scelti.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-2 grid gap-2">
+            <Button asChild>
+              <Link to="/profilo">Mostra itinerario nel profilo</Link>
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSavedOpen(false);
+                setLift(null);
+                setQuery("");
+                setHotel(null);
+                setRental(null);
+                setHotels([]);
+                setRentals([]);
+              }}
+            >
+              Crea un altro itinerario
+            </Button>
+            <Button asChild variant="ghost">
+              <Link to="/esplora">Torna a esplorare</Link>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {!datesReady && (
         <p className="text-sm text-muted-foreground">
@@ -224,59 +259,6 @@ export function ItineraryBuilder({ startDate, endDate, totalDays }: Props) {
             Accedi per salvare l'itinerario
           </Link>
         </Button>
-      )}
-    </div>
-  );
-}
-
-function PlaceList({
-  title,
-  icon,
-  places,
-  selected,
-  onSelect,
-}: {
-  title: string;
-  icon: React.ReactNode;
-  places: NearbyPlace[];
-  selected: NearbyPlace | null;
-  onSelect: (place: NearbyPlace) => void;
-}) {
-  return (
-    <div className="rounded-xl border border-border p-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-card-foreground">
-        {icon}
-        {title}
-      </div>
-      {places.length === 0 ? (
-        <p className="mt-2 text-sm text-muted-foreground">Nessun risultato entro 10 km.</p>
-      ) : (
-        <ul className="mt-3 max-h-72 space-y-2 overflow-auto pr-1">
-          {places.map((place) => (
-            <li key={place.placeId}>
-              <button
-                type="button"
-                onClick={() => onSelect(place)}
-                className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                  selected?.placeId === place.placeId
-                    ? "border-primary bg-primary/10"
-                    : "border-border hover:bg-accent"
-                }`}
-              >
-                <span className="block text-sm font-medium text-foreground">{place.name}</span>
-                <span className="mt-0.5 block text-xs text-muted-foreground">
-                  {place.address}
-                </span>
-                {place.rating !== null && (
-                  <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                    <Star className="h-3 w-3 fill-current text-primary" />
-                    {place.rating.toFixed(1)}
-                  </span>
-                )}
-              </button>
-            </li>
-          ))}
-        </ul>
       )}
     </div>
   );
