@@ -314,6 +314,19 @@ export const itinerarySchema = z.object({
   }),
   selectedHotel: selectionSchema,
   selectedRental: selectionSchema,
+  /** Voto di efficienza complessivo del viaggio (0-10). */
+  efficiencyScore: z.number().min(0).max(10).nullable().optional(),
+  /** Dettaglio analitico dei costi stimati. */
+  costBreakdown: z
+    .object({
+      travel: z.number(),
+      hotel: z.number(),
+      rental: z.number(),
+      skipass: z.number(),
+      total: z.number(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export type ItineraryPayload = z.infer<typeof itinerarySchema>;
@@ -338,6 +351,8 @@ export function itineraryRow(payload: ItineraryPayload, userId: string) {
     rental_name: payload.selectedRental.name,
     rental_rating: payload.selectedRental.rating ?? null,
     rental_address: payload.selectedRental.address ?? "",
+    efficiency_score: payload.efficiencyScore ?? null,
+    cost_breakdown: (payload.costBreakdown ?? null) as unknown as never,
   };
 }
 

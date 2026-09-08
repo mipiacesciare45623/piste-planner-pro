@@ -10,6 +10,7 @@ import {
   saveItinerary,
   type NearbyPlace,
 } from "@/lib/ski/itinerary.functions";
+import { estimatedNightPrice, estimatedRentalPrice, euro, totalNights, tripBreakdown } from "@/lib/ski/pricing";
 import type { Resort } from "@/lib/ski/types";
 
 interface Props {
@@ -18,6 +19,12 @@ interface Props {
   endDate: string;
   days: number;
   radiusM: number;
+  /** Costo del trasporto stimato (carburante, pedaggi, parcheggio). */
+  travelCost?: number;
+  /** Costo skipass per il periodo scelto. */
+  skipassCost?: number;
+  /** Voto di efficienza calcolato per questo comprensorio. */
+  efficiencyScore?: number;
   onBack: () => void;
   /** Chiamata dopo il salvataggio riuscito: apre la modale di conferma. */
   onSaved?: () => void;
@@ -29,6 +36,9 @@ export function ResortSelectionPanel({
   endDate,
   days,
   radiusM,
+  travelCost = 0,
+  skipassCost = 0,
+  efficiencyScore,
   onBack,
   onSaved,
 }: Props) {
@@ -48,6 +58,15 @@ export function ResortSelectionPanel({
   // L'utente può salvare solo dopo aver confrontato e scelto hotel + noleggio.
   const datesReady = Boolean(startDate && endDate);
   const canSave = datesReady && Boolean(hotel) && Boolean(rental);
+
+  // Ricalcolo in tempo reale del costo totale in base alle scelte dell'utente.
+  const breakdown = tripBreakdown({
+    travel: travelCost,
+    skipass: skipassCost,
+    nightPrice: hotel ? estimatedNightPrice(hotel) : 0,
+    rentalPerDay: rental ? estimatedRentalPrice(rental) : 0,
+    totalDays: days,
+  });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUserId(data.session?.user.id ?? null));
@@ -116,6 +135,8 @@ export function ResortSelectionPanel({
             rating: rental.rating,
             address: rental.address,
           },
+          efficiencyScore: efficiencyScore ?? null,
+          costBreakdown: breakdown,
         },
       });
       setMessage(null);
@@ -162,6 +183,7 @@ export function ResortSelectionPanel({
             places={hotels}
             selected={hotel}
             onSelect={setHotel}
+            kind="hotel"
           />
           <PlaceRow
             title="Dove Noleggiare"
@@ -169,10 +191,44 @@ export function ResortSelectionPanel({
             places={rentals}
             selected={rental}
             onSelect={setRental}
+            kind="rental"
           />
 
         </div>
       )}
+
+      <div className="mt-6 rounded-2xl border border-border bg-muted/40 p-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="text-sm font-semibold text-foreground">
+            Costo totale stimato della vacanza
+          </h3>
+          <span className="font-display text-2xl font-semibold text-primary">
+            {euro(breakdown.total)}
+          </span>
+        </div>
+        <ul className="mt-3 grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
+          <li>Trasporto: {euro(breakdown.travel)}</li>
+          <li>
+            Alloggio: {euro(breakdown.hotel)}{" "}
+            <span className="text-xs">
+              ({totalNights(days)} {totalNights(days) === 1 ? "notte" : "notti"})
+            </span>
+          </li>
+          <li>
+            Noleggio: {euro(breakdown.rental)} <span className="text-xs">({days} gg)</span>
+          </li>
+          <li>Skipass: {euro(breakdown.skipass)}</li>
+        </ul>
+        {typeof efficiencyScore === "number" && (
+          <p className="mt-2 text-sm text-foreground">
+            Voto di efficienza del viaggio:{" "}
+            <span className="font-semibold text-primary">{efficiencyScore.toFixed(1)} / 10</span>
+          </p>
+        )}
+        <p className="mt-2 text-xs text-muted-foreground">
+          Il totale si aggiorna quando cambi alloggio o noleggio.
+        </p>
+      </div>
 
       {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
       {message && (

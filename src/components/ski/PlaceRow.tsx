@@ -2,6 +2,8 @@ import { ExternalLink, ImageOff, MapPin, Navigation, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { directionsUrl, placeUrl } from "@/lib/ski/places";
+import { ensureAbsoluteUrl } from "@/lib/url";
+import { estimatedNightPrice, estimatedRentalPrice, euro } from "@/lib/ski/pricing";
 import type { NearbyPlace } from "@/lib/ski/itinerary.functions";
 
 interface Props {
@@ -10,14 +12,16 @@ interface Props {
   places: NearbyPlace[];
   selected: NearbyPlace | null;
   onSelect: (place: NearbyPlace) => void;
+  /** Alloggio o noleggio: cambia la stima di prezzo mostrata sulla card. */
+  kind?: "hotel" | "rental";
 }
 
 /**
  * Riga orizzontale scorrevole di luoghi reali provenienti da Google Places:
- * foto, valutazione con numero di recensioni, indirizzo e link diretto alla
- * scheda Google Maps. Nessun provider di prenotazione esterno.
+ * foto, valutazione con numero di recensioni, prezzo stimato, indirizzo e link
+ * diretto alla scheda Google Maps. Nessun provider di prenotazione esterno.
  */
-export function PlaceRow({ title, icon, places, selected, onSelect }: Props) {
+export function PlaceRow({ title, icon, places, selected, onSelect, kind = "hotel" }: Props) {
   return (
     <section aria-label={title}>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -35,6 +39,8 @@ export function PlaceRow({ title, icon, places, selected, onSelect }: Props) {
           {places.map((place) => {
             const isSelected = selected?.placeId === place.placeId;
             const maps = placeUrl(place.name, place.placeId, place.address);
+            const price =
+              kind === "hotel" ? estimatedNightPrice(place) : estimatedRentalPrice(place);
 
             return (
               <li
@@ -51,7 +57,7 @@ export function PlaceRow({ title, icon, places, selected, onSelect }: Props) {
                 >
                   {place.photoUrl ? (
                     <img
-                      src={place.photoUrl}
+                      src={ensureAbsoluteUrl(place.photoUrl)}
                       alt={place.name}
                       loading="lazy"
                       className="h-36 w-full object-cover"
@@ -70,6 +76,12 @@ export function PlaceRow({ title, icon, places, selected, onSelect }: Props) {
                       {place.rating !== null
                         ? `${place.rating.toFixed(1)} · ${place.userRatingCount ?? 0} recensioni`
                         : "Nessuna valutazione"}
+                    </p>
+                    <p className="text-sm font-semibold text-primary">
+                      ≈ {euro(price)}
+                      <span className="text-xs font-normal text-muted-foreground">
+                        {kind === "hotel" ? " / notte" : " / giorno"}
+                      </span>
                     </p>
                     <p className="flex items-start gap-1 text-xs text-muted-foreground">
                       <MapPin className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />

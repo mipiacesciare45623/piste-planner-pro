@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { CalendarDays, ExternalLink } from "lucide-react";
+import { ensureAbsoluteUrl } from "@/lib/url";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Photo } from "./Photo";
@@ -79,7 +80,7 @@ export function NewsList({ news }: { news: NewsItem[] }) {
                   </ul>
                 )}
                 <a
-                  href={n.url}
+                  href={ensureAbsoluteUrl(n.url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"

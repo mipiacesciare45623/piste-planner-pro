@@ -17,9 +17,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ensureAbsoluteUrl } from "@/lib/url";
 import { directionsUrl, placeUrl } from "@/lib/ski/places";
 import { RESORT_CATALOG, liftStatusForResort } from "@/lib/ski/catalog";
 import { seasonForRange } from "@/lib/ski/season";
+import { euro } from "@/lib/ski/pricing";
 
 export interface ItineraryRowLike {
   id: string;
@@ -37,6 +39,14 @@ export interface ItineraryRowLike {
   rental_rating: number | string | null;
   rental_address: string | null;
   rental_place_id: string;
+  efficiency_score?: number | string | null;
+  cost_breakdown?: {
+    travel: number;
+    hotel: number;
+    rental: number;
+    skipass: number;
+    total: number;
+  } | null;
 }
 
 const it = (iso: string) => new Date(iso).toLocaleDateString("it-IT");
@@ -91,7 +101,7 @@ export function ItineraryDetailDialog({
                 {itinerary.resort_lat.toFixed(4)}, {itinerary.resort_lng.toFixed(4)}
               </p>
               <a
-                href={`https://www.google.com/maps/search/?api=1&query=${itinerary.resort_lat},${itinerary.resort_lng}`}
+                href={ensureAbsoluteUrl(`https://www.google.com/maps/search/?api=1&query=${itinerary.resort_lat},${itinerary.resort_lng}`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
@@ -122,6 +132,33 @@ export function ItineraryDetailDialog({
                 </div>
                 {!info.season.open && (
                   <p className="mt-2 text-sm text-muted-foreground">{info.season.message}</p>
+                )}
+              </section>
+            )}
+
+            {(itinerary.cost_breakdown || asNumber(itinerary.efficiency_score ?? null) !== null) && (
+              <section className="mt-3 rounded-xl border border-border p-4">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Gauge className="h-4 w-4 text-primary" /> Voto e costi del viaggio
+                </h3>
+                {asNumber(itinerary.efficiency_score ?? null) !== null && (
+                  <p className="mt-2 text-sm text-foreground">
+                    Voto di efficienza:{" "}
+                    <span className="font-semibold text-primary">
+                      {asNumber(itinerary.efficiency_score ?? null)!.toFixed(1)} / 10
+                    </span>
+                  </p>
+                )}
+                {itinerary.cost_breakdown && (
+                  <ul className="mt-2 grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
+                    <li>Trasporto: {euro(itinerary.cost_breakdown.travel)}</li>
+                    <li>Alloggio: {euro(itinerary.cost_breakdown.hotel)}</li>
+                    <li>Noleggio: {euro(itinerary.cost_breakdown.rental)}</li>
+                    <li>Skipass: {euro(itinerary.cost_breakdown.skipass)}</li>
+                    <li className="font-semibold text-foreground sm:col-span-2">
+                      Totale stimato: {euro(itinerary.cost_breakdown.total)}
+                    </li>
+                  </ul>
                 )}
               </section>
             )}

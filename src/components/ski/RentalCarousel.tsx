@@ -1,4 +1,5 @@
 import { ExternalLink, Footprints, Store, TicketPercent } from "lucide-react";
+import { ensureAbsoluteUrl } from "@/lib/url";
 import { Badge } from "@/components/ui/badge";
 import { Photo } from "./Photo";
 import type { Rental, SkierLevel } from "@/lib/ski/types";
@@ -66,7 +67,7 @@ export function RentalCarousel({
                 </Badge>
               )}
               <a
-                href={r.booking_url}
+                href={ensureAbsoluteUrl(r.booking_url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs font-medium text-primary underline-offset-2 hover:underline"
