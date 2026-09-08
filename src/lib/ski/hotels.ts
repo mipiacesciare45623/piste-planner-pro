@@ -1,4 +1,5 @@
 import type { Hotel, HotelCategory, Resort } from "./types";
+import { MIN_NIGHT_PRICE, totalNights } from "./pricing";
 
 export const HOTEL_CATEGORIES: Array<{
   id: HotelCategory;
@@ -36,9 +37,11 @@ export function hotelsToShow(resort: Resort, category: HotelCategory): Hotel[] {
 /** Prezzo medio a notte della categoria scelta. */
 export function averageNightPrice(resort: Resort, category: HotelCategory): number {
   const list = hotelsForCategory(resort, category);
-  if (list.length === 0) return 0;
+  if (list.length === 0) return MIN_NIGHT_PRICE;
   const sum = list.reduce((acc, h) => acc + h.price_per_night, 0);
-  return Math.round((sum / list.length) * 100) / 100;
+  const avg = Math.round((sum / list.length) * 100) / 100;
+  // Un soggiorno non può mai costare 0 €: applichiamo la tariffa minima stimata.
+  return Math.max(MIN_NIGHT_PRICE, avg);
 }
 
 /** Costo hotel = prezzo medio a notte x (giorni di vacanza - 1). */
@@ -49,6 +52,6 @@ export function hotelCost(
   enabled: boolean,
 ): number {
   if (!enabled) return 0;
-  const nights = Math.max(0, days - 1);
+  const nights = totalNights(days);
   return Math.round(averageNightPrice(resort, category) * nights * 100) / 100;
 }

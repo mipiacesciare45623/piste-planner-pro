@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ensureAbsoluteUrl } from "@/lib/url";
 import { directionsUrl, placeUrl } from "@/lib/ski/places";
 import { RESORT_CATALOG, liftStatusForResort } from "@/lib/ski/catalog";
 import { seasonForRange } from "@/lib/ski/season";
@@ -91,7 +92,7 @@ export function ItineraryDetailDialog({
                 {itinerary.resort_lat.toFixed(4)}, {itinerary.resort_lng.toFixed(4)}
               </p>
               <a
-                href={`https://www.google.com/maps/search/?api=1&query=${itinerary.resort_lat},${itinerary.resort_lng}`}
+                href={ensureAbsoluteUrl(`https://www.google.com/maps/search/?api=1&query=${itinerary.resort_lat},${itinerary.resort_lng}`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
