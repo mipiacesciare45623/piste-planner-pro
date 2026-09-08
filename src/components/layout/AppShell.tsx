@@ -1,12 +1,42 @@
 import { Link } from "@tanstack/react-router";
-import { Compass, MapPlus, Snowflake, User } from "lucide-react";
+import { Compass, LogOut, MapPlus, Snowflake, User } from "lucide-react";
 import type { ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 const NAV = [
   { to: "/", label: "Esplora", icon: Compass, exact: true },
   { to: "/itinerario", label: "Crea itinerario", icon: MapPlus, exact: false, highlight: true },
   { to: "/profilo", label: "Profilo", icon: User, exact: false },
 ] as const;
+
+function AccountBar() {
+  const { isAuthenticated, username, loading, signOut } = useAuth();
+  if (loading) return null;
+  return (
+    <div className="flex items-center justify-end gap-3 border-b border-border bg-card/60 px-5 py-2">
+      {isAuthenticated ? (
+        <>
+          <Link to="/profilo" className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+              {username.slice(0, 2).toUpperCase()}
+            </span>
+            {username}
+          </Link>
+          <Button size="sm" variant="ghost" onClick={() => void signOut()} aria-label="Esci">
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </>
+      ) : (
+        <Button asChild size="sm" variant="secondary">
+          <Link to="/auth" search={{ next: "/profilo" }}>
+            Accedi
+          </Link>
+        </Button>
+      )}
+    </div>
+  );
+}
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
@@ -44,6 +74,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Contenuto */}
       <div className="lg:pl-60">
+        <AccountBar />
         <div className="pb-24 lg:pb-0">{children}</div>
       </div>
 
