@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, CableCar, CalendarClock, Mountain, Snowflake } from "lucide-react";
@@ -42,6 +42,8 @@ function LocalityPage() {
   const { slug } = Route.useParams();
   const resort = useMemo(() => RESORT_CATALOG.find((r) => r.id === slug) ?? null, [slug]);
 
+  const [showAllLifts, setShowAllLifts] = useState(false);
+
   const loadNews = useServerFn(fetchSkiNews);
   const { data: newsData } = useQuery({
     queryKey: ["ski-news"],
@@ -77,6 +79,7 @@ function LocalityPage() {
   const season = resortSeason(resort);
   const status = liftStatusForResort(resort);
   const lifts = liftsForResort(resort);
+  const visibleLifts = showAllLifts ? lifts : lifts.slice(0, 10);
 
   return (
     <main className="min-h-screen bg-background">
@@ -133,7 +136,7 @@ function LocalityPage() {
           </p>
         ) : (
           <ul className="mt-4 divide-y divide-border rounded-2xl border border-border">
-            {lifts.map((lift) => {
+            {visibleLifts.map((lift) => {
               const open = season.open && lift.active;
               return (
                 <li
@@ -156,6 +159,13 @@ function LocalityPage() {
               );
             })}
           </ul>
+        )}
+        {lifts.length > 10 && !showAllLifts && (
+          <div className="mt-4 flex justify-center">
+            <Button variant="secondary" onClick={() => setShowAllLifts(true)}>
+              Mostra resto ({lifts.length - 10})
+            </Button>
+          </div>
         )}
         <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
           <Mountain className="h-3.5 w-3.5" />

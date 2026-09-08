@@ -95,7 +95,7 @@ function inWinter(resort: Resort, date: Date): boolean {
 
 const OPEN_WINTER = "Aperto - Stagione Invernale";
 const OPEN_SUMMER = "Aperto - Stagione Estiva";
-const CLOSED = "Chiuso - Pausa Stagionale / Manutenzione";
+const CLOSED = "Chiuso - Pausa Stagionale";
 
 function statusFor(resort: Resort, date: Date): SeasonStatus {
   const glacier = isGlacierResort(resort);
