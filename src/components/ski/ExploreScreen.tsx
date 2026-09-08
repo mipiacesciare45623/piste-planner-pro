@@ -1,24 +1,17 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Clock, MapPin, Mountain, Route as RouteIcon, Search, Snowflake } from "lucide-react";
+import { CalendarClock, MapPin, Mountain, Search, Snowflake } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { NewsList, type NewsItem } from "@/components/ski/NewsList";
-import { ResortStatusPanel } from "@/components/ski/ResortStatusPanel";
 import { CATALOG_REGIONS, RESORT_CATALOG, searchCatalog } from "@/lib/ski/catalog";
 import { fetchSkiNews } from "@/lib/ski/news.functions";
 import resortsData from "@/data/resorts.json";
 import staticNews from "@/data/news.json";
-import type { Resort } from "@/lib/ski/types";
+import { resortSeason } from "@/lib/ski/season";
 
 /** Dati editoriali extra disponibili solo per i comprensori curati. */
 type CuratedExtra = {
@@ -51,8 +44,8 @@ export function ExploreScreen() {
   // Feed RSS in tempo reale, con le notizie editoriali come fallback.
   const news: NewsItem[] = newsData?.news?.length ? newsData.news : fallbackNews;
 
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<Resort | null>(null);
   const [region, setRegion] = useState("Tutte");
   const [minKm, setMinKm] = useState(0);
   const [snow, setSnow] = useState<string>("Tutte");
@@ -115,8 +108,8 @@ export function ExploreScreen() {
                     <button
                       type="button"
                       onClick={() => {
-                        setSelected(r);
                         setQuery("");
+                        void navigate({ to: "/localita/$slug", params: { slug: r.id } });
                       }}
                       className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors hover:bg-accent"
                     >
@@ -135,8 +128,6 @@ export function ExploreScreen() {
           </div>
         </div>
       </header>
-
-      <ResortQuickView resort={selected} onClose={() => setSelected(null)} />
 
       {/* News */}
       <section className="mx-auto max-w-5xl px-5 py-8">
@@ -208,6 +199,7 @@ export function ExploreScreen() {
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {shown.map((r) => {
             const extra = extras.get(r.id);
+            const season = resortSeason(r);
             return (
               <Link
                 key={r.id}
@@ -220,6 +212,17 @@ export function ExploreScreen() {
                   <span className="truncate font-semibold text-foreground">{r.name}</span>
                 </div>
                 <p className="mt-1 truncate text-xs text-muted-foreground">{r.region}</p>
+                <Badge
+                  variant={season.open ? "secondary" : "outline"}
+                  className="mt-2 gap-1 whitespace-normal text-left"
+                >
+                  {season.glacier ? (
+                    <Snowflake className="h-3.5 w-3.5 shrink-0" />
+                  ) : (
+                    <CalendarClock className="h-3.5 w-3.5 shrink-0" />
+                  )}
+                  {season.badge}
+                </Badge>
                 <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                   <div>
                     <dt>Impianti</dt>
@@ -265,68 +268,5 @@ export function ExploreScreen() {
         )}
       </section>
     </main>
-  );
-}
-
-function ResortQuickView({
-  resort,
-  onClose,
-}: {
-  resort: Resort | null;
-  onClose: () => void;
-}) {
-  const extra = resort ? extras.get(resort.id) : undefined;
-
-  return (
-    <Dialog open={Boolean(resort)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg">
-        {resort && (
-          <>
-            <DialogHeader>
-              <DialogTitle className="font-display text-xl">{resort.name}</DialogTitle>
-              <DialogDescription>
-                {resort.region} · {resort.altitude} m
-              </DialogDescription>
-            </DialogHeader>
-
-            <ul className="space-y-3 text-sm">
-              <li className="flex items-center gap-3">
-                <Mountain className="h-4 w-4 shrink-0 text-primary" />
-                <span className="text-foreground">
-                  {resort.total_ski_km > 0 ? `${resort.total_ski_km} km di piste` : "km piste n.d."}
-                </span>
-              </li>
-              <li className="flex items-center gap-3">
-                <RouteIcon className="h-4 w-4 shrink-0 text-primary" />
-                <span className="text-foreground">
-                  {resort.total_lifts} impianti · {resort.modern_lifts_percentage}% veloci ·{" "}
-                  {resort.vertical_drop} m di dislivello
-                </span>
-              </li>
-              {extra?.opening_hours && (
-                <li className="flex items-center gap-3">
-                  <Clock className="h-4 w-4 shrink-0 text-primary" />
-                  <span className="text-foreground">Impianti: {extra.opening_hours}</span>
-                </li>
-              )}
-            </ul>
-
-            <div className="mt-4">
-              <ResortStatusPanel
-                resort={resort}
-                snowReport={extra?.snow_report ?? null}
-                openingHours={extra?.opening_hours ?? null}
-              />
-            </div>
-
-            <Button asChild className="mt-4 w-full">
-              <Link to="/crea-itinerario" search={{ targetResort: resort.id }}>
-                Pianifica la sciata qui
-              </Link>
-            </Button>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
   );
 }
