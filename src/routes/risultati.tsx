@@ -257,6 +257,11 @@ function ResultsPage() {
                     endDate={endDate}
                     days={search.days}
                     radiusM={search.parkingRadiusM}
+                    travelCost={
+                      result.costs.fuel + result.costs.tolls + result.costs.parking
+                    }
+                    skipassCost={result.costs.skipass}
+                    efficiencyScore={result.score}
                     onBack={() => setSelectedId(null)}
                     onSaved={() => setSavedOpen(true)}
                   />

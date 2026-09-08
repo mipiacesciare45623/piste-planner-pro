@@ -190,6 +190,7 @@ export function ItineraryBuilder({ startDate, endDate, totalDays }: Props) {
             places={hotels}
             selected={hotel}
             onSelect={setHotel}
+            kind="hotel"
           />
           <PlaceRow
             title="Noleggi attrezzatura"
@@ -197,6 +198,7 @@ export function ItineraryBuilder({ startDate, endDate, totalDays }: Props) {
             places={rentals}
             selected={rental}
             onSelect={setRental}
+            kind="rental"
           />
         </div>
       )}
