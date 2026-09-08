@@ -16,7 +16,9 @@ export type Database = {
     Tables: {
       itineraries: {
         Row: {
+          cost_breakdown: Json | null
           created_at: string
+          efficiency_score: number | null
           end_date: string
           hotel_address: string | null
           hotel_name: string
@@ -39,7 +41,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cost_breakdown?: Json | null
           created_at?: string
+          efficiency_score?: number | null
           end_date: string
           hotel_address?: string | null
           hotel_name: string
@@ -62,7 +66,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cost_breakdown?: Json | null
           created_at?: string
+          efficiency_score?: number | null
           end_date?: string
           hotel_address?: string | null
           hotel_name?: string
