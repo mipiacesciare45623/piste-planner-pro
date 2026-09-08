@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      favorites: {
+        Row: {
+          created_at: string
+          id: string
+          lat: number | null
+          lng: number | null
+          region: string | null
+          resort_name: string
+          resort_slug: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          region?: string | null
+          resort_name: string
+          resort_slug: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          region?: string | null
+          resort_name?: string
+          resort_slug?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       itineraries: {
         Row: {
           cost_breakdown: Json | null
